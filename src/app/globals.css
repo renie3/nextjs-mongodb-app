@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg: white;
+  --color-bgSoft: #f1f5f9;
+  --color-text: black;
+  --color-textSoft: #6b7280;
+  --color-borderColor: black;
+}
+
+@layer base {
+  @variant dark {
+    --color-bg: #0d0c22;
+    --color-bgSoft: #2d2b42;
+    --color-text: white;
+    --color-textSoft: #9ca3af;
+    --color-borderColor: #4b5563;
+  }
+
+  input,
+  textarea {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  .spinner {
+    @apply inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite];
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 10px;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+    border-radius: 10px;
+  }
+}
+
+body {
+  @apply bg-bg text-text;
+}
