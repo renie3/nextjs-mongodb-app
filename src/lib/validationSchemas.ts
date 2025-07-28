@@ -7,7 +7,7 @@ export const registerSchema = z
       .trim()
       .min(3, { message: "Username must be at least 3 characters long!" })
       .max(20, { message: "Username must be at most 20 characters long!" }),
-    email: z.email(),
+    email: z.email({ message: "Invalid email address" }).trim(),
     name: z
       .string()
       .trim()
