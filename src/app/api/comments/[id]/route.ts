@@ -10,7 +10,9 @@ export async function PUT(
 ) {
   const { id } = await params;
   const session = await auth();
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const body = await req.json();
   // const { desc } = body;
@@ -34,7 +36,7 @@ export async function PUT(
       });
     }
 
-    await Comment.findByIdAndUpdate(id, { $set: { desc } });
+    await Comment.findByIdAndUpdate(id, { desc });
 
     return new Response("Comment has been updated", { status: 200 });
   } catch (error) {
@@ -49,7 +51,9 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const session = await auth();
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   try {
     await connectToDB();
