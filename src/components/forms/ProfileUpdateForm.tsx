@@ -35,11 +35,15 @@ const ProfileUpdateForm = ({ session }: { session: Session | null }) => {
     setValue,
     formState: { errors },
   } = useForm<UserSchema>({
-    resolver: zodResolver(userSchema(isCredentials)),
-    defaultValues: {
-      username: session?.user?.username ?? "",
-      name: session?.user?.name ?? "",
-    },
+    resolver: zodResolver(userSchema),
+    defaultValues: isCredentials
+      ? {
+          username: session?.user?.username ?? "",
+          name: session?.user?.name ?? "",
+        }
+      : {
+          name: session?.user?.name ?? "",
+        },
   });
 
   const onSubmit = handleSubmit((data) => {

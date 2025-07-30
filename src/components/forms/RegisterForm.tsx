@@ -47,7 +47,7 @@ const RegisterForm = () => {
     } else if (state.message) {
       toast.error(state.message);
     }
-  }, [state]);
+  }, [state, router]);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5 w-[280px]">

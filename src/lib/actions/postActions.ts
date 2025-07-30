@@ -1,21 +1,31 @@
 "use server";
 
-import { auth } from "../auth";
 import connectToDB from "../connectToDB";
 import { Post } from "../models/post.model";
-import { PostSchema } from "../validationSchemas";
+import { postSchema } from "../validationSchemas";
+import { auth } from "../auth";
 
 export const createPost = async (
   previousState: { success: boolean; message: string },
-  data: PostSchema
+  data: unknown
 ) => {
-  const { title, desc, img, category, isFeatured } = data;
+  const validatedFields = postSchema.safeParse(data);
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
     return {
       success: false,
-      message: "Unauthorized",
+      message: "",
+    };
+  }
+
+  const { title, desc, img, category, isFeatured } = validatedFields.data;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
     };
   }
 
@@ -51,15 +61,45 @@ export const createPost = async (
 
 export const updatePost = async (
   previousState: { success: boolean; message: string },
-  data: PostSchema
+  data: unknown
 ) => {
-  const { id, title, desc, img, category, isFeatured } = data;
+  const validatedFields = postSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
+    return {
+      success: false,
+      message: "",
+    };
+  }
+
+  const { id, title, desc, img, category, isFeatured } = validatedFields.data;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
+    };
+  }
 
   try {
     await connectToDB();
 
+    const existingTitle = await Post.findOne({ title });
+    if (existingTitle && existingTitle._id.toString() !== id) {
+      return {
+        success: false,
+        message: "Title is already taken",
+      };
+    }
+
     await Post.findByIdAndUpdate(id, {
-      $set: { title, desc, img, category, isFeatured: isFeatured === "true" },
+      title,
+      desc,
+      img,
+      category,
+      isFeatured: isFeatured === "true",
     });
 
     return { success: true, message: "Post has been updated" };
@@ -77,6 +117,21 @@ export const deletePost = async (
   formData: FormData
 ) => {
   const id = formData.get("id") as string;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
+    };
+  }
+
+  if (!id) {
+    return {
+      success: false,
+      message: "Invalid post ID",
+    };
+  }
 
   try {
     await connectToDB();

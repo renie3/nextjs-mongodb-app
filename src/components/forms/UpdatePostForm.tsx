@@ -48,10 +48,10 @@ const UpdatePostForm = ({
   } = useForm<PostSchema>({
     resolver: zodResolver(postSchema),
     defaultValues: {
-      title: post?.title ?? "",
-      desc: post?.desc ?? "",
-      category: post?.category ?? "general",
-      isFeatured: post?.isFeatured ? "true" : "false",
+      title: post.title,
+      desc: post.desc,
+      category: post.category,
+      isFeatured: post.isFeatured ? "true" : "false",
     },
   });
 

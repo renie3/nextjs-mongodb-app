@@ -56,39 +56,33 @@ export const loginSchema = z.object({
 
 export type LoginSchema = z.infer<typeof loginSchema>;
 
-export const userSchema = (isCredentials: boolean) =>
-  z.object({
-    id: z.string().optional(),
-    username: isCredentials
-      ? z
-          .string()
-          .trim()
-          .min(3, { message: "Username must be at least 3 characters long!" })
-          .max(20, { message: "Username must be at most 20 characters long!" })
-      : z.string().optional(),
-    email: z
-      .string()
-      .trim()
-      .email({ message: "Invalid email address" })
-      .optional(),
-    name: z
-      .string()
-      .trim()
-      .min(2, { message: "Name must be at least 2 characters long!" })
-      .max(20, { message: "Name must be at most 20 characters long!" }),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters long!" })
-      .max(20, { message: "Password must be at most 20 characters long!" })
-      .regex(/[a-zA-Z]/, { message: "Contain at least one letter." })
-      .regex(/[0-9]/, { message: "Contain at least one number." })
-      .or(z.literal(""))
-      .optional(),
-    image: z.string().optional(),
-    isAdmin: z.enum(["true", "false"]).optional(),
-  });
+export const userSchema = z.object({
+  id: z.string().optional(),
+  username: z
+    .string()
+    .trim()
+    .min(3, { message: "Username must be at least 3 characters long!" })
+    .max(20, { message: "Username must be at most 20 characters long!" })
+    .optional(),
+  email: z.email({ message: "Invalid email address" }).optional(),
+  name: z
+    .string()
+    .trim()
+    .min(2, { message: "Name must be at least 2 characters long!" })
+    .max(20, { message: "Name must be at most 20 characters long!" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters long!" })
+    .max(20, { message: "Password must be at most 20 characters long!" })
+    .regex(/[a-zA-Z]/, { message: "Contain at least one letter." })
+    .regex(/[0-9]/, { message: "Contain at least one number." })
+    .or(z.literal(""))
+    .optional(),
+  image: z.string().optional(),
+  isAdmin: z.enum(["true", "false"]).optional(),
+});
 
-export type UserSchema = z.infer<ReturnType<typeof userSchema>>;
+export type UserSchema = z.infer<typeof userSchema>;
 
 export const postSchema = z.object({
   id: z.string().optional(),

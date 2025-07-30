@@ -1,12 +1,7 @@
 "use server";
 
 import { auth, signIn, signOut } from "@/lib/auth";
-import {
-  LoginSchema,
-  RegisterSchema,
-  registerSchema,
-  UserSchema,
-} from "../validationSchemas";
+import { loginSchema, registerSchema, userSchema } from "../validationSchemas";
 import connectToDB from "../connectToDB";
 import { User } from "../models/user.model";
 import bcrypt from "bcryptjs";
@@ -31,9 +26,10 @@ export const register = async (
   const validatedFields = registerSchema.safeParse(data);
 
   if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
     return {
       success: false,
-      message: "Invalid data submitted.",
+      message: "",
     };
   }
 
@@ -87,22 +83,34 @@ export const register = async (
 };
 
 export const login = async (
-  previousState: { message: string } | undefined,
-  data: LoginSchema
+  previousState: { success: boolean; message: string },
+  data: unknown
 ) => {
-  const { username, password } = data;
+  const validatedFields = loginSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
+    return {
+      success: false,
+      message: "",
+    };
+  }
+
+  const { username, password } = validatedFields.data;
 
   try {
     await signIn("credentials", { username, password, redirectTo: "/" });
+    return { success: true, message: "" };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
           return {
+            success: false,
             message: "Invalid Credentials",
           };
         default:
-          return { message: "Something went wrong" };
+          return { success: false, message: "Something went wrong" };
       }
     }
     throw error;
@@ -111,12 +119,23 @@ export const login = async (
 
 export const updateUser = async (
   previousState: { success: boolean; message: string },
-  data: UserSchema
+  data: unknown
 ) => {
-  const { id, username, email, name, password, image, isAdmin } = data;
+  const validatedFields = userSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
+    return {
+      success: false,
+      message: "",
+    };
+  }
+
+  const { username, name, password, image } = validatedFields.data;
 
   const session = await auth();
-  if (!id && !session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return {
       success: false,
       message: "Unauthorized",
@@ -125,30 +144,40 @@ export const updateUser = async (
 
   try {
     await connectToDB();
-    const updateFields: { [key: string]: string | boolean | undefined } = {
+
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername && existingUsername._id.toString() !== userId) {
+      return {
+        success: false,
+        message: "Username is already taken",
+      };
+    }
+
+    const existingName = await User.findOne({ name });
+    if (existingName && existingName._id.toString() !== userId) {
+      return {
+        success: false,
+        message: "Name is already taken",
+      };
+    }
+
+    const updateFields: {
+      username?: string;
+      name?: string;
+      image?: string;
+      password?: string;
+    } = {
       username,
-      email,
       name,
-      password,
       image,
-      isAdmin: isAdmin === "true",
     };
 
-    // remove empty or undefined values
-    Object.keys(updateFields).forEach(
-      (key) =>
-        (updateFields[key] === "" || updateFields[key] === undefined) &&
-        delete updateFields[key]
-    );
-
-    // hash password if it exist
-    if (password) {
+    // Hash password if provided and not just whitespace
+    if (password && password.trim() !== "") {
       updateFields.password = await bcrypt.hash(password, 10);
     }
 
-    await User.findByIdAndUpdate(id || session!.user.id, {
-      $set: updateFields,
-    });
+    await User.findByIdAndUpdate(userId, updateFields);
 
     return { success: true, message: "User has been updated" };
   } catch (error) {
@@ -162,9 +191,28 @@ export const updateUser = async (
 
 export const createUser = async (
   previousState: { success: boolean; message: string },
-  data: RegisterSchema
+  data: unknown
 ) => {
-  const { username, email, name, password, image, isAdmin } = data;
+  const validatedFields = registerSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
+    return {
+      success: false,
+      message: "",
+    };
+  }
+
+  const { username, email, name, password, image, isAdmin } =
+    validatedFields.data;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
+    };
+  }
 
   try {
     await connectToDB();
@@ -214,11 +262,109 @@ export const createUser = async (
   }
 };
 
+export const updateUserAdmin = async (
+  previousState: { success: boolean; message: string },
+  data: unknown
+) => {
+  const validatedFields = userSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    console.log(validatedFields.error.flatten().fieldErrors);
+    return {
+      success: false,
+      message: "",
+    };
+  }
+
+  const { id, username, email, name, password, image, isAdmin } =
+    validatedFields.data;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
+    };
+  }
+  try {
+    await connectToDB();
+
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername && existingUsername._id.toString() !== id) {
+      return {
+        success: false,
+        message: "Username is already taken",
+      };
+    }
+
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail && existingEmail._id.toString() !== id) {
+      return {
+        success: false,
+        message: "Email is already taken",
+      };
+    }
+
+    const existingName = await User.findOne({ name });
+    if (existingName && existingName._id.toString() !== id) {
+      return {
+        success: false,
+        message: "Name is already taken",
+      };
+    }
+
+    const updateFields: {
+      username?: string;
+      email?: string;
+      name?: string;
+      image?: string;
+      password?: string;
+      isAdmin?: string;
+    } = {
+      username,
+      email,
+      name,
+      image,
+      isAdmin,
+    };
+
+    // Hash password if provided and not just whitespace
+    if (password && password.trim() !== "") {
+      updateFields.password = await bcrypt.hash(password, 10);
+    }
+
+    await User.findByIdAndUpdate(id, updateFields);
+
+    return { success: true, message: "User has been updated" };
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Something went wrong",
+    };
+  }
+};
+
 export const deleteUser = async (
   previousState: { success: boolean; message: string },
   formData: FormData
 ) => {
   const id = formData.get("id") as string;
+
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return {
+      success: false,
+      message: "Admin only",
+    };
+  }
+
+  if (!id) {
+    return {
+      success: false,
+      message: "Invalid user ID",
+    };
+  }
 
   try {
     await connectToDB();

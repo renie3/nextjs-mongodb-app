@@ -12,6 +12,7 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [state, formAction, isPending] = useActionState(login, {
+    success: false,
     message: "",
   });
 
@@ -30,7 +31,9 @@ const LoginForm = () => {
   });
 
   useEffect(() => {
-    if (state?.message) {
+    if (state.success) {
+      toast.success(state.message);
+    } else if (state.message) {
       toast.error(state.message);
     }
   }, [state]);

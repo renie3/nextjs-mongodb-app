@@ -11,7 +11,7 @@ import { MdOutlineVisibility, MdOutlineVisibilityOff } from "react-icons/md";
 import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import { IoCloudUploadOutline } from "react-icons/io5";
-import { updateUser } from "@/lib/actions/userActions";
+import { updateUserAdmin } from "@/lib/actions/userActions";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -36,27 +36,32 @@ const UpdateUserForm = ({
     inputRef.current?.focus();
   }, []);
 
-  const [state, formAction, isPending] = useActionState(updateUser, {
+  const [state, formAction, isPending] = useActionState(updateUserAdmin, {
     success: false,
     message: "",
   });
 
-  const isCredentials = !!user?.username;
-
   const router = useRouter();
+
+  const isCredentials = !!user?.username;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<UserSchema>({
-    resolver: zodResolver(userSchema(isCredentials)),
-    defaultValues: {
-      username: user?.username ?? "",
-      email: user?.email ?? "",
-      name: user?.name ?? "",
-      isAdmin: user?.isAdmin ? "true" : "false",
-    },
+    resolver: zodResolver(userSchema),
+    defaultValues: isCredentials
+      ? {
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin ? "true" : "false",
+        }
+      : {
+          name: user.name,
+          isAdmin: user.isAdmin ? "true" : "false",
+        },
   });
 
   const onSubmit = handleSubmit((data) => {
