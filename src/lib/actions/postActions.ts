@@ -4,6 +4,7 @@ import connectToDB from "../connectToDB";
 import { Post } from "../models/post.model";
 import { postSchema } from "../validationSchemas";
 import { auth } from "../auth";
+import { Comment } from "../models/comment.model";
 
 export const createPost = async (
   previousState: { success: boolean; message: string },
@@ -137,6 +138,8 @@ export const deletePost = async (
     await connectToDB();
 
     await Post.findByIdAndDelete(id);
+    // Delete all comments linked to this post
+    await Comment.deleteMany({ post: id });
 
     return { success: true, message: "Post has been deleted" };
   } catch (error) {

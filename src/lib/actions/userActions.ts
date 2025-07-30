@@ -6,6 +6,8 @@ import connectToDB from "../connectToDB";
 import { User } from "../models/user.model";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { Post } from "../models/post.model";
+import { Comment } from "../models/comment.model";
 
 export const handleGoogleLogin = async () => {
   await signIn("google", { redirectTo: "/" });
@@ -370,6 +372,9 @@ export const deleteUser = async (
     await connectToDB();
 
     await User.findByIdAndDelete(id);
+    // Delete all posts and comments linked to this user
+    await Post.deleteMany({ user: id });
+    await Comment.deleteMany({ user: id });
 
     return { success: true, message: "User has been deleted" };
   } catch (error) {
